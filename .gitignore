@@ -17,6 +17,7 @@ memory_store/
 *.jsonl
 *.log
 chroma_db/
+graphify-out/
 
 # Frontend (Next.js)
 swarmcality-Frontend/frontend/node_modules/

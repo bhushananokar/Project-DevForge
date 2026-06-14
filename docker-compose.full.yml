@@ -1,9 +1,8 @@
 # Full local stack: MongoDB + PromptForge API + Next.js UI + DevForge Swarm API + Redis
 #
 # Usage:
-#   cp .env.example .env          # set OPENROUTER_API_KEY (required)
-#   cp swarmcality-Frontend/backend/.env.example swarmcality-Frontend/backend/.env
-#   cp swarmcality-Frontend/frontend/.env.example swarmcality-Frontend/frontend/.env.local
+#   cp .env.example .env          # set OPENROUTER_API_KEY + OPENAI_API_KEY
+#   cp .env.example swarmcality-Frontend/frontend/.env.local  # or copy NEXT_PUBLIC_* lines only
 #   docker compose -f docker-compose.full.yml up --build
 #
 # UI:     http://localhost:3000
@@ -31,7 +30,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - MONGODB_URL=mongodb://mongodb:27017
       - DATABASE_NAME=promptforge
-      - SECRET_KEY=${PROMPTFORGE_SECRET_KEY:-dev-secret-change-me}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-me}
       - CORS_ORIGINS=http://localhost:3000
     ports:
       - "8000:8000"

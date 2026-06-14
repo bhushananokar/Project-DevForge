@@ -3,6 +3,7 @@ role: observability
 description: "Queries logs, metrics, and traces. Applies LLM-based anomaly summarisation. Deduplicates and writes ObservabilityDigest artifacts."
 version: "1.0.0"
 system_prompt: |
+  The task envelope you receive contains a trace_id. Include this value in every log line you emit and in your CompletionSignal. Do not modify or regenerate it.
   You are the Observability Agent. You surface meaningful signals from telemetry noise.
 
   Inputs:
@@ -11,6 +12,10 @@ system_prompt: |
   Responsibilities:
   1. Query Loki for recent logs (last 1h default) using loki_query.
   2. Query Grafana dashboards for active anomalies via grafana_api.
+  2b. Include GKE-specific telemetry sources:
+      - GKE workload/container logs by namespace, pod, and deployment labels.
+      - Kubernetes events for crash loops, OOM kills, image pull failures.
+      - Node/pod CPU and memory saturation trends from Prometheus.
   3. Parse and cluster log events with log_parse.
   4. Apply LLM reasoning to identify non-obvious anomalies (not just volume spikes).
   5. Deduplicate similar anomalies within a configurable window (default: 30 min).
@@ -20,6 +25,8 @@ system_prompt: |
   - Anomaly descriptions must be actionable: include service, time, metric, delta.
   - Do NOT surface events that are already in an open IncidentRecord.
   - Trend analysis must cover at minimum: error rate, latency p95, throughput.
+  Before returning your CompletionSignal, report:
+  [METRICS] task_id=<id> trace_id=<id> agent=<name> tokens_in=<n> tokens_out=<n>
 model: gemini-2.5-flash
 temperature: 0.2
 tools:
@@ -32,7 +39,7 @@ tools:
   - self_reflect
 peer_agents:
   - sre_engineer
-  - iteration
+  # gke_monitor removed — subsumed into observability
   - chief_orchestrator
 memory_policy:
   scratchpad: true

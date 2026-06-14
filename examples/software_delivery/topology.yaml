@@ -17,8 +17,7 @@ agents:
     count: 1
 
   # Discovery
-  - role: market_research
-    count: 1
+  # market_research removed — pre-SDLC scope, not part of dev cycle
 
   # Planning
   - role: product_manager
@@ -45,6 +44,8 @@ agents:
     count: 1
   - role: integration_engineer
     count: 1
+  - role: test_generator
+    count: 1
 
   # Quality
   - role: qa_engineer
@@ -53,26 +54,33 @@ agents:
     count: 1
   - role: debug_agent
     count: 1
+  - role: dependency_manager
+    count: 1
+  - role: performance_agent
+    count: 1
+  - role: documentation_agent
+    count: 1
+
+  # Release
+  - role: release_manager
+    count: 1
 
   # Deployment
   - role: devops_engineer
     count: 1
-  - role: deployment_engineer
-    count: 1
+  # deployment_engineer merged into devops_engineer
 
   # Post-Launch
   - role: sre_engineer
     count: 1
-  - role: gke_monitor
-    count: 1
+  # gke_monitor removed — subsumed into observability
   - role: observability
     count: 1
   - role: user_feedback
     count: 1
 
   # Iteration
-  - role: iteration
-    count: 1
+  # iteration removed — handled by orchestrator convergence loop
 
 coordination:
   strategy: hierarchical

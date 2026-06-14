@@ -45,8 +45,9 @@ output_schema:
     dry_run: {type: boolean}
     script_hash: {type: string}
 timeout: 300.0
-retry:
-  max_attempts: 1
+retry_policy:
+  max_attempts: 3
+  backoff_seconds: [5, 15, 60]
 reversal: >
   gcloud_cli with command:
   "gcloud run services update {service_name} --image {previous_image}

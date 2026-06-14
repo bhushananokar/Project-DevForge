@@ -1,10 +1,10 @@
 name: simple_chat
-description: "Single echo agent — fastest possible swarm for conversational tasks."
+description: "Single summarizer agent example for lightweight conversational tasks."
 
 orchestrator: orchestrator
 
 agents:
-  - role: echo
+  - role: summarizer
     count: 1
     model_override: llama-3.1-8b-instant
 
@@ -20,6 +20,6 @@ budget:
 
 safety:
   mode: auto
-  tool_allowlist: [echo]
+  tool_allowlist: [memory_store]
 
 memory_backend: local

@@ -20,7 +20,6 @@ budget_allocation:
   quality:         12
   deployment:      10
   post_launch:     10
-  iteration:       6
 
 phases:
   - id: discovery
@@ -29,12 +28,11 @@ phases:
       Understand the market, competitors, and user pain points. Produce a
       ProductBrief and MarketResearch that ground all downstream decisions.
     default_agents:
-      - market_research
+      # market_research removed — pre-SDLC scope, not part of dev cycle
       - memory_agent
     required_input_artifact_types: []       # first phase: only the user goal
     required_output_artifact_types:
       - ProductBrief
-      - MarketResearch
     human_approval_gate: false
     on_failure: abort
 
@@ -49,7 +47,6 @@ phases:
       - memory_agent
     required_input_artifact_types:
       - ProductBrief
-      - MarketResearch
     required_output_artifact_types:
       - PRD
     human_approval_gate: true
@@ -120,6 +117,32 @@ phases:
     human_approval_gate: true
     on_failure: abort
 
+  - id: test_planning
+    name: Test Planning
+    phase: test_planning
+    agent: test_generator
+    description: >
+      Generate test cases, unit test scaffolding, and integration test stubs from
+      acceptance criteria and API contracts.
+    input_keys:
+      - "planning.acceptance_criteria.v1"
+      - "contracts.openapi_spec.v1"
+      - "architecture.system_design.v1"
+    output_key: "testing.test_plan.v1"
+    hitl_mandatory: false
+    hitl_threshold: 0.6
+    default_agents:
+      - test_generator
+      - memory_agent
+    required_input_artifact_types:
+      - PRD
+      - APISpec
+      - ArchitectureDoc
+    required_output_artifact_types:
+      - TestPlan
+    human_approval_gate: false
+    on_failure: abort
+
   - id: build
     name: Build
     description: >
@@ -145,6 +168,33 @@ phases:
     human_approval_gate: false
     on_failure: abort
 
+  - id: documentation_generation
+    name: Documentation Generation
+    phase: documentation_generation
+    agent: documentation_agent
+    description: >
+      Generate inline docstrings, README, and API reference from built code and
+      OpenAPI spec.
+    input_keys:
+      - "development.backend_output.v1"
+      - "development.frontend_output.v1"
+      - "contracts.openapi_spec.v1"
+      - "architecture.adr_log.v1"
+    output_key: "docs.readme.v1"
+    hitl_mandatory: false
+    hitl_threshold: 0.5
+    default_agents:
+      - documentation_agent
+      - memory_agent
+    required_input_artifact_types:
+      - CodeChangeSet
+      - APISpec
+      - ArchitectureDoc
+    required_output_artifact_types:
+      - DocumentationReport
+    human_approval_gate: false
+    on_failure: abort
+
   - id: live_test
     name: Live Test
     description: >
@@ -152,7 +202,8 @@ phases:
       CRUD smoke tests, and loop through the debug agent until all checks pass
       or 3 fix cycles are exhausted.
     default_agents:
-      - live_test
+      # live_test stubbed to qa_engineer ownership until dedicated agent is implemented
+      - qa_engineer
     required_input_artifact_types:
       - CodeChangeSet
     required_output_artifact_types:
@@ -180,6 +231,77 @@ phases:
     human_approval_gate: true
     on_failure: abort
 
+  - id: dependency_audit
+    name: Dependency Audit
+    phase: dependency_audit
+    agent: dependency_manager
+    description: >
+      Scan all dependency manifests for outdated packages, CVEs, and license issues.
+    input_keys:
+      - "codebase.dependency_manifest.v1"
+    output_key: "testing.cve_report.v1"
+    hitl_mandatory: false
+    hitl_threshold: 0.4
+    default_agents:
+      - dependency_manager
+      - memory_agent
+    required_input_artifact_types:
+      - CodeChangeSet
+    required_output_artifact_types:
+      - DependencyReport
+    human_approval_gate: false
+    on_failure: abort
+
+  - id: performance_testing
+    name: Performance Testing
+    phase: performance_testing
+    agent: performance_agent
+    description: >
+      Run load tests and profiling against staging environment; flag any breach
+      of defined SLOs.
+    input_keys:
+      - "deployment.deploy_manifest.v1"
+      - "monitoring.slo_report.v1"
+    output_key: "testing.performance_report.v1"
+    hitl_mandatory: false
+    hitl_threshold: 0.5
+    default_agents:
+      - performance_agent
+      - memory_agent
+    required_input_artifact_types:
+      - DeploymentRecord
+      - MonitoringConfig
+    required_output_artifact_types:
+      - PerformanceReport
+    human_approval_gate: false
+    on_failure: abort
+
+  - id: release_preparation
+    name: Release Preparation
+    phase: release_preparation
+    agent: release_manager
+    description: >
+      Compute semantic version, generate changelog from commits and task metadata,
+      tag release, draft release notes.
+    input_keys:
+      - "planning.sprint_plan.v1"
+      - "review.code_review_report.v1"
+      - "testing.test_results.v1"
+    output_key: "release.changelog.v1"
+    hitl_mandatory: false
+    hitl_threshold: 0.7
+    default_agents:
+      - release_manager
+      - memory_agent
+    required_input_artifact_types:
+      - TestReport
+      - CodeReviewReport
+      - DeploymentPlan
+    required_output_artifact_types:
+      - ReleasePackage
+    human_approval_gate: true
+    on_failure: abort
+
   - id: deployment
     name: Deployment
     description: >
@@ -187,7 +309,7 @@ phases:
       rollout strategy. All production-touching actions require human approval.
     default_agents:
       - devops_engineer
-      - deployment_engineer
+      # deployment_engineer merged into devops_engineer
       - memory_agent
     required_input_artifact_types:
       - CodeChangeSet
@@ -218,23 +340,7 @@ phases:
     human_approval_gate: false
     skip_without_deploy: true   # skipped when --no-deploy (default)
     on_failure: abort
-
-  - id: iteration
-    name: Iteration
-    description: >
-      Analyse signals (feedback, incidents, test failures) and decide: hotfix
-      (back to build), minor update (back to planning), or major rework (back to
-      discovery). Routes through the Chief Orchestrator.
-    default_agents:
-      - iteration
-      - chief_orchestrator
-      - memory_agent
-    required_input_artifact_types:
-      - FeedbackDigest
-    required_output_artifact_types:
-      - ReleaseDecision
-    human_approval_gate: true
-    on_failure: abort
+  # iteration removed — handled by orchestrator convergence loop
 
 # Transition table — overrides the default linear order.
 # source phase → list of possible target phases (first match wins on condition).
@@ -244,17 +350,5 @@ transitions:
     condition: test_report_failing        # QA agent verdict: tests failing
 
   - from: quality
-    to: iteration
-    condition: security_blocks            # SecurityReport.blocks_progression = true
-
-  - from: iteration
-    to: discovery
-    condition: release_decision_major_respec
-
-  - from: iteration
-    to: planning
-    condition: release_decision_minor_update
-
-  - from: iteration
     to: build
-    condition: release_decision_hotfix
+    condition: security_blocks            # SecurityReport.blocks_progression = true

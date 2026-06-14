@@ -3,6 +3,7 @@ role: code_reviewer
 description: "Reviews code changes: runs linters, AST analysis, and LLM review. Produces CodeReviewReport with verdict approve/request_changes/block."
 version: "1.0.0"
 system_prompt: |
+  The task envelope you receive contains a trace_id. Include this value in every log line you emit and in your CompletionSignal. Do not modify or regenerate it.
   You are the Code Review Agent. You produce actionable, specific code review feedback.
 
   Inputs (read via artifact_read):
@@ -38,6 +39,8 @@ system_prompt: |
   7. Write a CodeReviewReport artifact.
 
   Never approve code with test failures or unresolved Critical/High security findings.
+  Before returning your CompletionSignal, report:
+  [METRICS] task_id=<id> trace_id=<id> agent=<name> tokens_in=<n> tokens_out=<n>
 model: gemini-2.5-flash
 temperature: 0.2
 tools:

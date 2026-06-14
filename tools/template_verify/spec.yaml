@@ -28,5 +28,6 @@ output_schema:
           expected: {type: string}
           actual: {type: string}
 timeout: 30.0
-retry:
-  max_attempts: 1
+retry_policy:
+  max_attempts: 3
+  backoff_seconds: [5, 15, 60]

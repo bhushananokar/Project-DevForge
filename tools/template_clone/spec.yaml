@@ -35,5 +35,6 @@ output_schema:
     params_applied: {type: object}
     warnings: {type: array}
 timeout: 120.0
-retry:
-  max_attempts: 1
+retry_policy:
+  max_attempts: 3
+  backoff_seconds: [5, 15, 60]

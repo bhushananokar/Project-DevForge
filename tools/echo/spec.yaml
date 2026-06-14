@@ -18,7 +18,8 @@ output_schema:
       type: string
   required: [echoed]
 timeout: 5.0
-retry:
-  max_attempts: 1
+retry_policy:
+  max_attempts: 3
+  backoff_seconds: [5, 15, 60]
   backoff_base: 1.0
   backoff_max: 1.0

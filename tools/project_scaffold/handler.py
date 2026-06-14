@@ -24,16 +24,30 @@ _TEMPLATES: dict[str, dict[str, str]] = {
         "Dockerfile": 'FROM python:3.12-slim\nWORKDIR /app\nCOPY pyproject.toml .\nRUN pip install -e .\nCOPY . .\nCMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]\n',
     },
     "react_tailwind": {
-        "package.json": '{\n  "name": "{name}",\n  "version": "0.1.0",\n  "scripts": {\n    "dev": "vite",\n    "build": "tsc && vite build",\n    "test": "vitest"\n  },\n  "dependencies": {\n    "react": "^18",\n    "react-dom": "^18",\n    "@tanstack/react-query": "^5",\n    "react-hook-form": "^7",\n    "axios": "^1"\n  },\n  "devDependencies": {\n    "@vitejs/plugin-react": "^4",\n    "tailwindcss": "^3",\n    "typescript": "^5",\n    "vite": "^5",\n    "vitest": "^1"\n  }\n}\n',
-        "index.html": '<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>{name}</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n',
-        "vite.config.ts": 'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\n\nexport default defineConfig({\n  plugins: [react()],\n});\n',
-        "tsconfig.json": '{\n  "compilerOptions": {\n    "target": "ES2020",\n    "useDefineForClassFields": true,\n    "lib": ["ES2020", "DOM", "DOM.Iterable"],\n    "module": "ESNext",\n    "skipLibCheck": true,\n    "moduleResolution": "bundler",\n    "allowImportingTsExtensions": true,\n    "resolveJsonModule": true,\n    "isolatedModules": true,\n    "noEmit": true,\n    "jsx": "react-jsx",\n    "strict": true\n  },\n  "include": ["src"]\n}\n',
-        "src/main.tsx": 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./App";\nimport "./index.css";\n\nReactDOM.createRoot(document.getElementById("root")!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n',
-        "src/App.tsx": 'import React from "react";\n\nexport default function App() {\n  return (\n    <div className="min-h-screen bg-gray-50">\n      <h1 className="text-2xl font-bold p-8">{name}</h1>\n    </div>\n  );\n}\n',
-        "src/index.css": "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n",
-        "src/api.ts": 'import axios from "axios";\n\nexport const api = axios.create({\n  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",\n});\n',
-        ".env.example": "VITE_API_URL=http://localhost:8000\n",
+        # package.json: type=module so vite.config.ts ESM import works;
+        # autoprefixer is required alongside tailwindcss for postcss pipeline.
+        "package.json": '{\n  "name": "{name}",\n  "private": true,\n  "version": "0.1.0",\n  "type": "module",\n  "scripts": {\n    "dev": "vite",\n    "build": "tsc && vite build",\n    "preview": "vite preview",\n    "test": "vitest"\n  },\n  "dependencies": {\n    "react": "^18",\n    "react-dom": "^18",\n    "@tanstack/react-query": "^5",\n    "react-hook-form": "^7",\n    "react-router-dom": "^6",\n    "axios": "^1"\n  },\n  "devDependencies": {\n    "@types/react": "^18",\n    "@types/react-dom": "^18",\n    "@vitejs/plugin-react": "^4",\n    "autoprefixer": "^10",\n    "postcss": "^8",\n    "tailwindcss": "^3",\n    "typescript": "^5",\n    "vite": "^5",\n    "vitest": "^1"\n  }\n}\n',
+        # index.html: must be at project root (not src/) for Vite; script MUST be type="module"
+        "index.html": '<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <link rel="icon" type="image/svg+xml" href="/vite.svg" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>{name}</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n',
+        # vite.config.ts: must import and register @vitejs/plugin-react or JSX won't compile
+        "vite.config.ts": 'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\n\nexport default defineConfig({\n  plugins: [react()],\n  server: { port: 5173, strictPort: false },\n});\n',
+        # tsconfig.json: moduleResolution=bundler is required for Vite + TS 5 to resolve .tsx imports
+        "tsconfig.json": '{\n  "compilerOptions": {\n    "target": "ES2020",\n    "useDefineForClassFields": true,\n    "lib": ["ES2020", "DOM", "DOM.Iterable"],\n    "module": "ESNext",\n    "skipLibCheck": true,\n    "moduleResolution": "bundler",\n    "allowImportingTsExtensions": true,\n    "resolveJsonModule": true,\n    "isolatedModules": true,\n    "noEmit": true,\n    "jsx": "react-jsx",\n    "strict": true,\n    "noUnusedLocals": false,\n    "noUnusedParameters": false\n  },\n  "include": ["src"],\n  "references": [{ "path": "./tsconfig.node.json" }]\n}\n',
+        # tsconfig.node.json: required so vite.config.ts itself type-checks
+        "tsconfig.node.json": '{\n  "compilerOptions": {\n    "composite": true,\n    "skipLibCheck": true,\n    "module": "ESNext",\n    "moduleResolution": "bundler",\n    "allowSyntheticDefaultImports": true\n  },\n  "include": ["vite.config.ts"]\n}\n',
+        # postcss.config.js: WITHOUT this file Tailwind directives are NOT processed —
+        # the browser receives bare @tailwind text and nothing renders styled.
+        "postcss.config.js": 'export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};\n',
+        # tailwind.config.js: content glob must include index.html at root level
         "tailwind.config.js": 'export default {\n  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],\n  theme: { extend: {} },\n  plugins: [],\n};\n',
+        # src/main.tsx: wraps App in QueryClientProvider so react-query hooks work globally
+        "src/main.tsx": 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport { QueryClient, QueryClientProvider } from "@tanstack/react-query";\nimport App from "./App";\nimport "./index.css";\n\nconst queryClient = new QueryClient();\n\nReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(\n  <React.StrictMode>\n    <QueryClientProvider client={queryClient}>\n      <App />\n    </QueryClientProvider>\n  </React.StrictMode>\n);\n',
+        "src/App.tsx": 'export default function App() {\n  return (\n    <div className="min-h-screen bg-gray-50 flex items-center justify-center">\n      <h1 className="text-2xl font-bold text-gray-900">{name}</h1>\n    </div>\n  );\n}\n',
+        # index.css: the three @tailwind directives must be present for Tailwind to inject styles
+        "src/index.css": "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n",
+        "src/api.ts": 'import axios from "axios";\n\nexport const apiClient = axios.create({\n  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",\n});\n',
+        ".env.example": "VITE_API_URL=http://localhost:8000\n",
+        ".gitignore": "node_modules\ndist\n.env\n*.local\n",
     },
     "cli_python": {
         "pyproject.toml": '[project]\nname = "{name}"\nversion = "0.1.0"\n[project.scripts]\n{name} = "{name}.cli:main"\n',

@@ -207,7 +207,7 @@ def bootstrap_registries(
     groq_api_key: str = "",
     openrouter_api_key: str = "",
     gemini_api_key: str = "",
-    default_model: str = "gemini-2.5-flash",
+    default_model: str = "deepseek/deepseek-v4-pro",
 ) -> tuple[ToolRegistry, AgentSpecRegistry, ProviderRegistry]:
     """
     Initialise all three registries from scratch:

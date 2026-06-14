@@ -28,7 +28,7 @@ system_prompt: |
   Never suppress findings without justification in the artifact.
   Before returning your CompletionSignal, report:
   [METRICS] task_id=<id> trace_id=<id> agent=<name> tokens_in=<n> tokens_out=<n>
-model: gemini-2.5-flash
+model: deepseek/deepseek-v4-pro
 temperature: 0.1
 tools:
   - sast_scan

@@ -96,7 +96,7 @@ The **`swarm`** service serves the API; **`swarm-worker`** consumes tasks for **
 | Variable | Default | Description |
 |---|---|---|
 | `GROQ_API_KEY` | *required* | Groq API key |
-| `SWARM_DEFAULT_MODEL` | `llama-3.3-70b-versatile` | Default LLM model |
+| `SWARM_DEFAULT_MODEL` | `deepseek/deepseek-v4-pro` | Default LLM model (OpenRouter) |
 | `SWARM_LOG_LEVEL` | `INFO` | Logging level |
 | `SWARM_TRACE_DIR` | `./traces` | Where trace JSONL files are stored |
 | `SWARM_MEMORY_DIR` | `./memory_store` | ChromaDB persistence directory |

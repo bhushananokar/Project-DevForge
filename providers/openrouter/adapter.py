@@ -25,7 +25,7 @@ log = get_logger("providers.openrouter")
 
 _BASE_URL = "https://openrouter.ai/api/v1"
 
-# Groq model IDs → OpenRouter equivalents
+# Legacy model IDs → OpenRouter equivalents (Groq, Gemini, short aliases)
 _GROQ_TO_OPENROUTER: dict[str, str] = {
     "llama-3.3-70b-versatile":          "meta-llama/llama-3.3-70b-instruct",
     "llama-3.1-70b-versatile":          "meta-llama/llama-3.1-70b-instruct",
@@ -39,6 +39,19 @@ _GROQ_TO_OPENROUTER: dict[str, str] = {
     "llama-3.2-11b-vision-preview":     "meta-llama/llama-3.2-11b-vision-instruct",
 }
 
+_GEMINI_TO_OPENROUTER: dict[str, str] = {
+    "gemini-2.5-flash":                 "deepseek/deepseek-v4-pro",
+    "gemini-2.5-pro":                   "deepseek/deepseek-v4-pro",
+    "gemini-2.5-pro-preview-03-25":     "deepseek/deepseek-v4-pro",
+    "gemini-2.0-flash":                 "deepseek/deepseek-v4-pro",
+    "gemini-2.0-flash-lite":            "deepseek/deepseek-v4-pro",
+    "gemini-1.5-pro":                   "deepseek/deepseek-v4-pro",
+    "gemini-1.5-flash":                 "deepseek/deepseek-v4-pro",
+    "gemini-1.5-flash-8b":              "deepseek/deepseek-v4-pro",
+}
+
+_DEFAULT_OPENROUTER_MODEL = "deepseek/deepseek-v4-pro"
+
 
 class OpenRouterAdapter(LLMProvider):
     """
@@ -46,7 +59,7 @@ class OpenRouterAdapter(LLMProvider):
     Supports tool-calling, streaming, and exponential-backoff retry on rate limits.
     """
 
-    def __init__(self, api_key: str, default_model: str = "openai/gpt-4o-mini") -> None:
+    def __init__(self, api_key: str, default_model: str = _DEFAULT_OPENROUTER_MODEL) -> None:
         self._api_key = api_key
         self._default_model = default_model
         self._headers = {
@@ -61,8 +74,12 @@ class OpenRouterAdapter(LLMProvider):
         return "openrouter"
 
     def _resolve_model(self, model: str) -> str:
-        """Translate Groq-style model IDs to OpenRouter IDs if needed."""
-        resolved = _GROQ_TO_OPENROUTER.get(model, model)
+        """Translate legacy Groq/Gemini model IDs to OpenRouter IDs if needed."""
+        resolved = (
+            _GROQ_TO_OPENROUTER.get(model)
+            or _GEMINI_TO_OPENROUTER.get(model)
+            or model
+        )
         if resolved != model:
             log.debug("model_remapped", from_model=model, to_model=resolved)
         return resolved

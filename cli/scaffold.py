@@ -16,7 +16,7 @@ version: "1.0.0"
 system_prompt: |
   You are a {name} agent. TODO: write a detailed system prompt here.
   Describe your role, approach, and output format.
-model: llama-3.3-70b-versatile
+model: deepseek/deepseek-v4-pro
 temperature: 0.7
 tools: []
 peer_agents: []

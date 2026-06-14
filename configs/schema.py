@@ -90,7 +90,7 @@ class AgentSpec(BaseModel):
     description: str = ""
     version: str = "1.0.0"
     system_prompt: str
-    model: str = "llama-3.3-70b-versatile"
+    model: str = "deepseek/deepseek-v4-pro"
     temperature: float = 0.7
     tools: list[str] = Field(default_factory=list)
     peer_agents: list[str] = Field(default_factory=list)
@@ -194,8 +194,8 @@ class SwarmConfig(BaseSettings):
     groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
     openrouter_api_key: str = Field(default="", alias="OPENROUTER_API_KEY")
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
-    provider: str = "gemini"
-    default_model: str = "gemini-2.5-flash"
+    provider: str = "openrouter"
+    default_model: str = "deepseek/deepseek-v4-pro"
     log_level: str = "INFO"
     log_file: Optional[str] = None
     trace_dir: str = "./traces"

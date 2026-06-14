@@ -89,6 +89,8 @@ async def _run_worker() -> None:
         tools_dir=tools_dir,
         agents_dir=agents_dir,
         groq_api_key=cfg.groq_api_key,
+        openrouter_api_key=cfg.openrouter_api_key,
+        gemini_api_key=cfg.gemini_api_key,
         default_model=cfg.default_model,
     )
     bus = create_bus(cfg.bus_transport, redis_url)
@@ -99,7 +101,7 @@ async def _run_worker() -> None:
 
     provider = None
     if pr.list():
-        provider = pr.get_or_default("groq")
+        provider = pr.get_or_default(cfg.provider or "openrouter")
 
     orch_id = os.environ.get("SWARM_ORCHESTRATOR_ID", "orchestrator")
     pub_channel = f"{stream_prefix}:{orch_id}"
@@ -118,7 +120,7 @@ async def _run_worker() -> None:
                     result = TaskResult(output="ok", success=True)
                 else:
                     if provider is None:
-                        raise RuntimeError("No LLM provider registered (set GROQ_API_KEY)")
+                        raise RuntimeError("No LLM provider registered (set OPENROUTER_API_KEY)")
                     spec = agent_specs.get(role) or _fallback_spec(role, cfg.default_model)
                     tools = {n: h for n, h in tool_handlers.items() if n in spec.tools}
                     agent = Agent(

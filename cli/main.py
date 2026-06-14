@@ -112,7 +112,7 @@ def _build_runtime(cfg, topology_path: Optional[str], deploy: bool = True):
 
     agent_specs = {name: spec for name, spec in ar.items()}
     tool_handlers = {name: handler for name, handler in tr.items()}
-    provider = pr.get_or_default(cfg.provider or "gemini")
+    provider = pr.get_or_default(cfg.provider or "openrouter")
 
     runtime = SwarmRuntime(
         topology=topology,
@@ -175,13 +175,13 @@ def run(
     \b
     Example:
       swarm run --goal "Research the latest LLM benchmarks"
-      swarm run --provider openrouter --model meta-llama/llama-3.3-70b-instruct --goal "..."
+      swarm run --provider openrouter --model deepseek/deepseek-v4-pro --goal "..."
       swarm run configs/research.yaml --goal "Write a Python web scraper"
     """
     cfg = _load_config(api_key, model, log_level, trace_dir, safety_mode, provider, openrouter_api_key)
     _setup_logging(cfg)
 
-    active_provider = cfg.provider or "gemini"
+    active_provider = cfg.provider or "openrouter"
     if active_provider == "openrouter" and not cfg.openrouter_api_key:
         console.print("[bold red]Error:[/bold red] OPENROUTER_API_KEY is not set.")
         console.print("  Set it in .env or pass --openrouter-api-key")
@@ -497,7 +497,7 @@ def dashboard(
         f"[bold cyan]Swarm Dashboard[/bold cyan]\n"
         f"API:  http://{host}:{port}\n"
         f"Docs: http://{host}:{port}/docs\n"
-        f"Provider: {cfg.provider or 'gemini'}",
+        f"Provider: {cfg.provider or 'openrouter'}",
         border_style="cyan",
     ))
 
@@ -909,7 +909,7 @@ def workforce(
     cfg.memory_dir = memory_dir
     _setup_logging(cfg)
 
-    active_provider = cfg.provider or "gemini"
+    active_provider = cfg.provider or "openrouter"
     if active_provider == "openrouter" and not cfg.openrouter_api_key:
         console.print("[bold red]Error:[/bold red] OPENROUTER_API_KEY is not set.")
         sys.exit(1)

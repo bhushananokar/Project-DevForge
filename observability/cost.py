@@ -21,11 +21,26 @@ _GROQ_PRICING: dict[str, tuple[float, float]] = {
     "llama-3.2-90b-vision-preview": (0.90, 0.90),
     "llama-3.2-11b-vision-preview": (0.18, 0.18),
 }
-_DEFAULT_PRICE = (0.59, 0.79)
+
+# OpenRouter pricing per 1 M tokens (input / output), USD
+_OPENROUTER_PRICING: dict[str, tuple[float, float]] = {
+    "deepseek/deepseek-v4-pro":       (0.435, 0.87),
+    "deepseek/deepseek-v4-flash":     (0.098, 0.197),
+    "deepseek/deepseek-v4-flash:free": (0.0, 0.0),
+    "meta-llama/llama-3.3-70b-instruct": (0.59, 0.79),
+    "meta-llama/llama-3.1-8b-instruct":  (0.05, 0.08),
+    "openai/gpt-4o-mini":             (0.15, 0.60),
+}
+
+_DEFAULT_PRICE = (0.435, 0.87)
 
 
 def estimate_cost(usage: TokenUsage, model: str) -> float:
-    in_price, out_price = _GROQ_PRICING.get(model, _DEFAULT_PRICE)
+    in_price, out_price = (
+        _OPENROUTER_PRICING.get(model)
+        or _GROQ_PRICING.get(model)
+        or _DEFAULT_PRICE
+    )
     return (usage.input_tokens * in_price + usage.output_tokens * out_price) / 1_000_000
 
 

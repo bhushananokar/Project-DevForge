@@ -9,7 +9,7 @@ from providers.base import LLMProvider
 from tools.base import ToolHandler
 
 _provider: Optional[LLMProvider] = None
-_model: str = "llama-3.3-70b-versatile"
+_model: str = "deepseek/deepseek-v4-pro"
 
 
 def set_provider(provider: LLMProvider, model: str) -> None:

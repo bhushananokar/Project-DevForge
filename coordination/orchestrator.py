@@ -122,7 +122,7 @@ class SwarmRuntime:
         _reflect_model = (
             (self.topology.agents[0].model_override if self.topology.agents else None)
             or next((s.model for s in self._agent_specs.values() if s.model), None)
-            or "gemini-2.5-flash"
+            or "deepseek/deepseek-v4-pro"
         )
         sr.set_provider(self._provider, _reflect_model)
         sa.set_factory(self._spawn_agent_for_goal)
@@ -135,7 +135,7 @@ class SwarmRuntime:
             _fallback_model = (
                 (self.topology.agents[0].model_override if self.topology.agents else None)
                 or next((s.model for s in self._agent_specs.values() if s.model), None)
-                or "gemini-2.5-flash"
+                or "deepseek/deepseek-v4-pro"
             )
             from configs.schema import AgentSpec as AS
             spec = AS(
@@ -501,18 +501,21 @@ class SwarmRuntime:
     ) -> TaskGraph:
         """Ask the LLM to decompose the goal into a task graph."""
         system = _DECOMPOSE_SYSTEM.format(roles=roles_str)
+        decompose_model = (
+            self._agent_specs.get("orchestrator", next(iter(self._agent_specs.values()))).model
+            if self._agent_specs else "deepseek/deepseek-v4-pro"
+        )
         result = await self._provider.complete(
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": goal},
             ],
-            model=self._agent_specs.get("orchestrator", next(iter(self._agent_specs.values()))).model
-            if self._agent_specs else "gemini-2.5-flash",
+            model=decompose_model,
             temperature=0.2,
         )
 
         if self._ledger:
-            self._ledger.record("orchestrator", "gemini-2.5-flash",
+            self._ledger.record("orchestrator", decompose_model,
                                 result.usage, root_task.id)
 
         raw = (result.content or "{}").strip()

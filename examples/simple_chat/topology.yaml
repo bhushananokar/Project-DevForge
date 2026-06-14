@@ -6,7 +6,7 @@ orchestrator: orchestrator
 agents:
   - role: summarizer
     count: 1
-    model_override: llama-3.1-8b-instant
+    model_override: deepseek/deepseek-v4-pro
 
 coordination:
   strategy: hierarchical

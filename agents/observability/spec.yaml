@@ -27,7 +27,7 @@ system_prompt: |
   - Trend analysis must cover at minimum: error rate, latency p95, throughput.
   Before returning your CompletionSignal, report:
   [METRICS] task_id=<id> trace_id=<id> agent=<name> tokens_in=<n> tokens_out=<n>
-model: gemini-2.5-flash
+model: deepseek/deepseek-v4-pro
 temperature: 0.2
 tools:
   - loki_query

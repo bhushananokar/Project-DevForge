@@ -1,6 +1,7 @@
 # Default swarm configuration — overridden by user config, project config, env vars, CLI flags
 
-default_model: "llama-3.3-70b-versatile"
+provider: "openrouter"
+default_model: "deepseek/deepseek-v4-pro"
 log_level: "INFO"
 log_file: null
 

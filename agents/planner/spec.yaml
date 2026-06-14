@@ -56,13 +56,12 @@ system_prompt: |
   Write the handoff_plan as a HandoffPlan artifact (auto_approve=true) so build
   agents can read it via artifact_read before writing any code.
 
-  ## Model for agents
-  Keep Flash for meta-agents (router, summarizer, memory). Use Pro for build agents.
-  State this in the action plan so chief_orchestrator knows which model to request.
+  All agents use deepseek/deepseek-v4-pro via OpenRouter unless chief_orchestrator
+  overrides a role for a specific task.
   Before returning your CompletionSignal, report:
   [METRICS] task_id=<id> trace_id=<id> agent=<name> tokens_in=<n> tokens_out=<n>
   All memory reads and writes must use keys from schemas/memory_keys.yaml. Never write to a freeform key. If the data you need to store does not match an existing key, check if an existing key is semantically equivalent before creating a new pattern. The memory_agent will reject writes with unrecognised keys.
-model: gemini-2.5-flash
+model: deepseek/deepseek-v4-pro
 temperature: 0.4
 tools:
   - memory_retrieve

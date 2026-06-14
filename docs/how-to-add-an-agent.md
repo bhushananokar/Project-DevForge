@@ -29,7 +29,7 @@ system_prompt: |
   structured report with: Executive Summary, Key Findings, Risks, Recommendations.
   Use the calculator tool for any numerical analysis.
   Always cite sources.
-model: llama-3.3-70b-versatile
+model: deepseek/deepseek-v4-pro
 temperature: 0.3
 tools:
   - web_search
@@ -55,7 +55,7 @@ hooks: {}
 | `name` | ✓ | Human-readable label |
 | `role` | ✓ | Unique ID — used by orchestrator to assign tasks |
 | `system_prompt` | ✓ | LLM system prompt (supports `{{agent_id}}`, `{{role}}`, `{{task_id}}`) |
-| `model` | | Groq model name (default: `llama-3.3-70b-versatile`) |
+| `model` | | OpenRouter model ID (default: `deepseek/deepseek-v4-pro`) |
 | `temperature` | | 0.0–2.0 (default: 0.7) |
 | `tools` | | Tool names this agent may call |
 | `peer_agents` | | Roles this agent may spawn or message |

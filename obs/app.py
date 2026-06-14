@@ -190,7 +190,7 @@ def _run_swarm(goal: str, topology_path: Optional[str], q: queue.Queue, result: 
         bus      = create_bus(cfg.bus_transport, cfg.redis_url)
         longterm = LocalChromaMemory(persist_dir=cfg.memory_dir)
         ledger   = reset_ledger()
-        prov     = pr.get_or_default(cfg.provider or "gemini")
+        prov     = pr.get_or_default(cfg.provider or "openrouter")
 
         runtime = SwarmRuntime(
             topology=topology,

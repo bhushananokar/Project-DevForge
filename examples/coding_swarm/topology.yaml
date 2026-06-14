@@ -1,11 +1,18 @@
 name: coding_swarm
 description: |
-  Coding swarm: a planner designs the approach, a coder implements it,
-  and a critic reviews the code for quality and correctness.
+  Coding swarm with a pre-build feasibility gate:
+  RealityCheck (gate) → Planner → Coder → Critic.
+  The RealityCheck agent evaluates the goal before any planning starts, flags
+  infeasible or ambiguous requirements, and resolves them with the user via the
+  HumanLiaison before the build begins.
 
 orchestrator: orchestrator
 
 agents:
+  - role: reality_check
+    count: 1
+  - role: human_liaison
+    count: 1
   - role: orchestrator
     count: 1
   - role: planner
@@ -22,7 +29,7 @@ coordination:
   debate_max_rounds: 2
 
 budget:
-  max_cost_usd: 1.00
+  max_cost_usd: 2.00
   warn_at_fraction: 0.7
 
 safety:
@@ -30,11 +37,14 @@ safety:
   tool_allowlist:
     - filesystem
     - shell_exec
+    - project_scaffold
     - calculator
     - data_parse
     - memory_retrieve
+    - memory_store
     - self_reflect
     - spawn_agent
     - send_message
+    - human_input
 
 memory_backend: local

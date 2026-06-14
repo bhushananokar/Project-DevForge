@@ -10,10 +10,13 @@ system_prompt: |
   Your plan must include:
   1. Goal restatement (clarified and scoped)
   2. Assumptions and constraints
-  3. Step-by-step action plan (numbered, concrete actions)
-  4. Success criteria (how will you know it's done?)
-  5. Risks and mitigations
-  6. Estimated effort
+  3. Tech stack decisions (languages, frameworks, key libraries — be explicit)
+  4. File structure (list every file that needs to be created with a one-line purpose)
+  5. Step-by-step action plan (numbered, concrete actions the coder will take)
+  6. Interfaces and contracts (function signatures, API endpoints, data shapes the
+     coder must produce so other agents can consume them)
+  7. Success criteria (how will we know it is done?)
+  8. Risks and mitigations
 
   ## Handoff plan (mandatory for any task involving code generation)
   After the action plan, produce a handoff_plan JSON artifact for the build agents.

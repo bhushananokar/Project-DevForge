@@ -10,8 +10,8 @@ const SWARM_HTTP = process.env.NEXT_PUBLIC_SWARM_API_URL ?? "http://localhost:87
 const TOPOLOGIES: Record<string, { name: string; description: string; agents: string[] }> = {
   coding_swarm: {
     name: "Coding Swarm",
-    description: "Planner + Coder + Critic for focused, single-task coding jobs.",
-    agents: ["orchestrator", "planner", "coder", "critic"],
+    description: "Feasibility gate → Planner → Coder → Critic. Includes reality check before building.",
+    agents: ["reality_check", "human_liaison", "orchestrator", "planner", "coder", "critic"],
   },
   software_delivery: {
     name: "Software Delivery",
@@ -43,6 +43,8 @@ const TOPOLOGIES: Record<string, { name: string; description: string; agents: st
 };
 
 const ALL_AGENTS = [
+  "reality_check",
+  "human_liaison",
   "orchestrator",
   "chief_orchestrator",
   "planner",
@@ -69,6 +71,8 @@ const ALL_AGENTS = [
 ];
 
 const AGENT_ICONS: Record<string, string> = {
+  reality_check: "🔍",
+  human_liaison: "🤝",
   orchestrator: "🧠",
   chief_orchestrator: "👑",
   planner: "📋",
@@ -110,6 +114,12 @@ interface AgentState {
   status: AgentStatus;
   currentTask: string;
   logs: LogEntry[];
+}
+
+interface HumanInputRequest {
+  request_id: string;
+  prompt: string;
+  options: string[];
 }
 
 interface SwarmPanelProps {
@@ -164,6 +174,10 @@ export default function SwarmPanel({ notebookGoal }: SwarmPanelProps) {
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [showBroadcast, setShowBroadcast] = useState(false);
 
+  // Human input channel — set when the swarm asks the user a question
+  const [humanInputReq, setHumanInputReq] = useState<HumanInputRequest | null>(null);
+  const [humanInputAnswer, setHumanInputAnswer] = useState("");
+
   const wsRef = useRef<WebSocket | null>(null);
   const globalLogRef = useRef<HTMLDivElement>(null);
 
@@ -199,6 +213,17 @@ export default function SwarmPanel({ notebookGoal }: SwarmPanelProps) {
     const type = event.type as string;
     const content = (event.content as string) ?? "";
     const time = nowTime();
+
+    if (type === "human_input_request") {
+      // The swarm is pausing and needs a human answer.
+      setHumanInputReq({
+        request_id: event.request_id as string,
+        prompt: event.prompt as string,
+        options: (event.options as string[]) ?? [],
+      });
+      addGlobalLog("⏸ Swarm paused — human input required");
+      return;
+    }
 
     if (type === "run_start") {
       setSwarmStatus("running");
@@ -388,6 +413,18 @@ export default function SwarmPanel({ notebookGoal }: SwarmPanelProps) {
     addGlobalLog(`Broadcast to all agents: ${msg}`);
     setBroadcastMsg("");
     setShowBroadcast(false);
+  }
+
+  function submitHumanInput(answer: string) {
+    if (!humanInputReq || !answer.trim()) return;
+    sendToWS({
+      type: "human_input_response",
+      request_id: humanInputReq.request_id,
+      response: answer.trim(),
+    });
+    addGlobalLog(`▶ Human response sent: "${answer.trim()}"`);
+    setHumanInputReq(null);
+    setHumanInputAnswer("");
   }
 
   function stopAgent(role: string) {
@@ -643,6 +680,88 @@ export default function SwarmPanel({ notebookGoal }: SwarmPanelProps) {
               </button>
             </div>
           </div>
+
+          {/* ── Human input request panel ─────────────────────────────── */}
+          {humanInputReq && (
+            <div className="border border-accent rounded-xl bg-accent/5 animate-slide-up overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-accent/30 bg-accent/10">
+                <span className="text-xl">🤝</span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-accent">Human input required</p>
+                  <p className="text-xs text-secondary mt-0.5">
+                    The swarm is paused and waiting for your answer before continuing.
+                  </p>
+                </div>
+                <span className="text-xs text-accent/60 font-mono animate-pulse">⏸ paused</span>
+              </div>
+
+              {/* Question */}
+              <div className="px-4 py-4 flex flex-col gap-4">
+                <div className="bg-elevated rounded-lg px-4 py-3 border border-border">
+                  <p className="text-sm text-primary whitespace-pre-wrap leading-relaxed">
+                    {humanInputReq.prompt}
+                  </p>
+                </div>
+
+                {/* Option buttons (when the swarm provides a fixed choice list) */}
+                {humanInputReq.options.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {humanInputReq.options.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => submitHumanInput(opt)}
+                        className="px-4 py-2 bg-elevated border border-border hover:border-accent hover:bg-accent/10 text-sm rounded-lg transition-colors"
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Free-text input (always shown so user can give detailed answers) */}
+                <div className="flex gap-2">
+                  <textarea
+                    autoFocus
+                    rows={3}
+                    value={humanInputAnswer}
+                    onChange={(e) => setHumanInputAnswer(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        submitHumanInput(humanInputAnswer);
+                      }
+                    }}
+                    placeholder={
+                      humanInputReq.options.length > 0
+                        ? "Or type a custom answer…"
+                        : "Type your answer… (Ctrl+Enter to send)"
+                    }
+                    className="flex-1 bg-elevated border border-border focus:border-accent rounded-lg px-3 py-2 text-sm outline-none resize-none transition-colors placeholder:text-secondary/40"
+                  />
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button
+                      onClick={() => submitHumanInput(humanInputAnswer)}
+                      disabled={!humanInputAnswer.trim()}
+                      className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-40 rounded-lg text-sm font-semibold transition-colors"
+                    >
+                      Send
+                    </button>
+                    <button
+                      onClick={() => submitHumanInput("proceed")}
+                      className="px-4 py-2 border border-border hover:border-border-light text-secondary hover:text-primary rounded-lg text-xs transition-colors"
+                      title="Skip this question and let the swarm proceed with default behaviour"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-secondary/60">
+                  Ctrl+Enter to send · Skip lets the swarm proceed with its best guess
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Broadcast input */}
           {showBroadcast && (

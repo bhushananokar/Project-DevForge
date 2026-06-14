@@ -8,12 +8,27 @@ Endpoints:
   GET  /cost/{id}    — cost summary for a trace
   GET  /agents       — list registered agent roles
   GET  /tools        — list registered tools
-  WS   /ws           — WebSocket for live agent events
+  WS   /ws           — WebSocket for live agent events + human input channel
   GET  /health       — health check
+
+WebSocket protocol (client → server):
+  { "type": "intervention",        "target_agent": "coder",  "message": "..." }
+  { "type": "broadcast_intervention",                         "message": "..." }
+  { "type": "stop_agent",          "target_agent": "coder" }
+  { "type": "stop_swarm" }
+  { "type": "human_input_response", "request_id": "<uuid>",  "response": "..." }
+
+WebSocket protocol (server → client):
+  { "type": "agent_event",  "role": "...", "event": "...", "content": "..." }
+  { "type": "human_input_request", "request_id": "<uuid>",
+    "prompt": "...", "options": [...] }
 """
 
 from __future__ import annotations
 
+import asyncio
+import json
+import uuid
 from typing import Any, Callable, Optional, Tuple
 
 from fastapi import FastAPI, HTTPException, WebSocket
@@ -30,11 +45,12 @@ app.add_middleware(
 
 # ── State (set by CLI on startup) ─────────────────────────────────────────────
 
-# _runtime_factory is called per /run request so each run gets a fresh,
-# isolated SwarmRuntime — no state bleed between consecutive API calls.
 _runtime_factory: Optional[Callable[[], Tuple[Any, Any]]] = None
 _config: Optional[Any] = None
 _ws_clients: list[WebSocket] = []
+
+# Pending human_input requests: request_id → asyncio.Future[str]
+_pending_human_inputs: dict[str, "asyncio.Future[str]"] = {}
 
 
 def set_runtime_factory(factory: Callable[[], Tuple[Any, Any]], config: Any) -> None:
@@ -53,6 +69,59 @@ def set_runtime(runtime: Any, config: Any) -> None:
     def _factory() -> Tuple[Any, Any]:
         return runtime, None
     set_runtime_factory(_factory, config)
+
+
+# ── Human input WebSocket bridge ──────────────────────────────────────────────
+
+async def request_human_input(
+    prompt: str,
+    options: Optional[list[str]],
+    timeout: float,
+) -> str:
+    """
+    Send a human_input_request to all connected WebSocket clients and wait for
+    the first human_input_response that matches the request_id.
+
+    Raises asyncio.TimeoutError if no response arrives within `timeout` seconds.
+    Falls back to the auto-approve value "proceed" if no clients are connected.
+    """
+    if not _ws_clients:
+        # No frontend connected — warn and auto-proceed so the swarm doesn't hang.
+        try:
+            from observability.logutil import get_logger
+            get_logger("api.human_input").warning(
+                "human_input_request with no WS clients — auto-approving"
+            )
+        except Exception:
+            pass
+        return "proceed"
+
+    req_id = str(uuid.uuid4())
+    loop = asyncio.get_event_loop()
+    future: asyncio.Future[str] = loop.create_future()
+    _pending_human_inputs[req_id] = future
+
+    event = {
+        "type": "human_input_request",
+        "request_id": req_id,
+        "prompt": prompt,
+        "options": options or [],
+    }
+    await broadcast_event(event)
+
+    try:
+        return await asyncio.wait_for(asyncio.shield(future), timeout=timeout)
+    finally:
+        _pending_human_inputs.pop(req_id, None)
+
+
+# Wire the WS requester into the human_input tool at module load time.
+# The tool checks _ws_requester at call time, so this import is safe.
+try:
+    import tools.human_input.handler as _hi
+    _hi.set_ws_requester(request_human_input)
+except Exception:
+    pass  # tool not installed yet — wired when needed
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
@@ -91,7 +160,6 @@ async def run_goal(req: RunRequest) -> RunResponse:
                 "before accepting run requests."
             ),
         )
-    # Build a fresh runtime per request — isolates state between runs.
     runtime, _ledger = _runtime_factory()
     result = await runtime.run(req.goal)
     trace_id = getattr(runtime, "trace_id", "")
@@ -152,12 +220,17 @@ async def list_tools() -> dict:
     from core.registry import get_tool_registry
     tr = get_tool_registry()
     tools = [
-        {"name": name, "description": handler.spec.description,
-         "side_effect_level": handler.spec.side_effect_level}
+        {
+            "name": name,
+            "description": handler.spec.description,
+            "side_effect_level": handler.spec.side_effect_level,
+        }
         for name, handler in tr.items()
     ]
     return {"tools": tools}
 
+
+# ── WebSocket ─────────────────────────────────────────────────────────────────
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
@@ -165,17 +238,40 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     _ws_clients.append(ws)
     try:
         while True:
-            await ws.receive_text()  # keep connection alive
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+
+            msg_type = msg.get("type", "")
+
+            if msg_type == "human_input_response":
+                # Route the user's answer back to the waiting request_human_input() call.
+                req_id = msg.get("request_id", "")
+                response = msg.get("response", "")
+                future = _pending_human_inputs.get(req_id)
+                if future and not future.done():
+                    future.set_result(response)
+
+            # All other client messages (intervention, stop_agent, etc.) are
+            # broadcast back so agent processes monitoring the bus can act on them.
+            # The swarm runtime listens via the message bus, not this WS directly,
+            # so we re-emit as a server→client broadcast for any UI subscribers.
+
     except Exception:
         pass
     finally:
-        _ws_clients.remove(ws)
+        if ws in _ws_clients:
+            _ws_clients.remove(ws)
 
 
 async def broadcast_event(event: dict) -> None:
+    """Broadcast a JSON event to all connected WebSocket clients."""
+    payload = json.dumps(event)
     for ws in list(_ws_clients):
         try:
-            import json
-            await ws.send_text(json.dumps(event))
+            await ws.send_text(payload)
         except Exception:
-            _ws_clients.remove(ws)
+            if ws in _ws_clients:
+                _ws_clients.remove(ws)

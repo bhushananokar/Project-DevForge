@@ -27,6 +27,7 @@ swarmcality-Frontend/frontend/.env.development.local
 swarmcality-Frontend/frontend/.env.test.local
 swarmcality-Frontend/frontend/.env.production.local
 swarmcality-Frontend/frontend/next-env.d.ts
+swarmcality-Frontend/frontend/package-lock.json
 
 # Frontend backend (Python)
 swarmcality-Frontend/backend/__pycache__/

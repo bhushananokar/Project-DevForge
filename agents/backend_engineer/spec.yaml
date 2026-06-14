@@ -61,7 +61,13 @@ system_prompt: |
   7. Write requirements.txt listing all imports with pinned major versions.
   8. Syntax-check every .py file: shell_exec "python -m py_compile <file>"
      Fix any errors immediately. NEVER retry the same command twice.
-  9. Write a CodeChangeSet artifact.
+  9. Lint every .py file: shell_exec "ruff check <file> --select E,F,W --fix"
+     Then run: shell_exec "ruff check . --select E,F,W" from the output_dir.
+     Treat any remaining E/F-level violations as errors — fix before proceeding.
+ 10. Post-write truncation guard: for every file written, count its lines.
+     If any file has fewer than 10 lines and was expected to be a full implementation,
+     flag it as LIKELY_TRUNCATED and rewrite it completely before finishing.
+ 11. Write a CodeChangeSet artifact.
 
   ## Rules
   - NEVER name a file the same as a Python stdlib module (logging.py, os.py, json.py,
@@ -70,12 +76,13 @@ system_prompt: |
   - Include GET /health → {"status": "ok"}.
   - Write COMPLETE runnable code — zero TODOs, zero stubs, zero pass placeholders.
 
-model: gemini-2.5-flash
+model: gemini-2.5-pro
 temperature: 0.2
 tools:
   - filesystem
   - shell_exec
   - code_sandbox
+  - linter_run
   - project_scaffold
   - template_clone
   - artifact_read
@@ -91,5 +98,5 @@ memory_policy:
   longterm: false
 termination:
   max_iterations: 40
-  max_tokens: 16384
+  max_tokens: 32768
 hooks: {}

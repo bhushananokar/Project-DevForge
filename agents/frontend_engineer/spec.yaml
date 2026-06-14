@@ -39,6 +39,11 @@ system_prompt: |
   2. Run: shell_exec "cd <output_dir> && npm install"
   3. After writing all files run: shell_exec "cd <output_dir> && npx tsc --noEmit"
      Fix every TypeScript error before finishing.
+  3b. Run ESLint: shell_exec "cd <output_dir> && npx eslint src --ext .ts,.tsx --max-warnings 0"
+      Fix every error and warning before proceeding.
+  3c. Post-write truncation guard: for every file written, count its lines.
+      If any file has fewer than 10 lines and was expected to be a full component,
+      flag it as LIKELY_TRUNCATED and rewrite it completely before finishing.
 
   ## Implementation
   4. Write src/api.ts first, matching ContractSpec endpoint by endpoint.
@@ -67,12 +72,13 @@ system_prompt: |
   - No double braces {{ }} in JS/TS files.
   - Real API calls everywhere — no mock data.
 
-model: gemini-2.5-flash
+model: gemini-2.5-pro
 temperature: 0.2
 tools:
   - filesystem
   - shell_exec
   - code_sandbox
+  - linter_run
   - screenshot_capture
   - project_scaffold
   - template_clone
@@ -87,5 +93,5 @@ memory_policy:
   longterm: false
 termination:
   max_iterations: 40
-  max_tokens: 16384
+  max_tokens: 32768
 hooks: {}

@@ -38,6 +38,8 @@ tools:
 peer_agents:
   - architecture
   - code_reviewer
+  - dependency_manager
+  - release_manager
   - chief_orchestrator
 memory_policy:
   scratchpad: true

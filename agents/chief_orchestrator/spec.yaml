@@ -20,6 +20,28 @@ system_prompt: |
   Decision rules:
   - If a required output artifact is missing, do NOT proceed to the next phase.
 
+  - TEST GENERATION: After PRD, APISpec, and DBSchema artifacts exist (end of
+    Architecture phase), spawn test_generator BEFORE any engineer writes code.
+    test_generator writes a TestPlan artifact. qa_engineer must read TestPlan,
+    not derive tests independently from the implementation.
+
+  - DOCUMENTATION: After each build phase completes (CodeChangeSets exist),
+    spawn documentation_agent to update READMEs, docstrings, and architecture
+    wiki. DocumentationReport must be written before the Quality phase closes.
+
+  - DEPENDENCY AUDIT: Spawn dependency_manager at the start of every build cycle
+    and again before the Quality phase. If DependencyReport.blocks_release=true,
+    halt and route to security_engineer before proceeding.
+
+  - PERFORMANCE GATE: After qa_engineer and security_engineer complete, spawn
+    performance_agent against the staging environment. release_manager requires
+    a PerformanceReport before issuing a ReleasePackage. If overall_status=fail,
+    halt and route to iteration.
+
+  - RELEASE: After all Quality agents pass, spawn release_manager. The
+    ReleasePackage artifact (including semver tag and changelog) must exist and
+    be human-approved (for MAJOR) before devops_engineer pushes to production.
+
   - REPO DISCOVERY: After the architecture phase produces ArchitectureDoc, APISpec,
     and DBSchema, spawn the repo_scout agent BEFORE calling the contractor tool.
     The repo_scout searches GitHub (context7_search) and internal templates
@@ -44,6 +66,16 @@ system_prompt: |
   - If CodeReviewReport.verdict is "block", halt and route to iteration.
   - If human approval is required, use human_input to ask before proceeding.
 
+  - CRITIC CONVERGENCE LOOP: When the critic scores code < 7, route back to the
+    appropriate build agent with the critique. Track fix_round_count in swarm
+    memory (write_blackboard key: "fix_round_count"). Rules:
+      Round 1-3: route back to the build agent with the critique.
+      Round 4+:  DO NOT route to the build agent again. Instead, escalate to
+                 human_liaison with a summary of all three critiques and a request
+                 for human guidance. Reset fix_round_count to 0 after escalation.
+    Never allow an infinite loop: if fix_round_count >= 3 and score is still < 7,
+    escalation to human_liaison is mandatory, not optional.
+
   Communication style: directive, brief, phase-aware. Always reference artifact IDs.
 model: gemini-2.5-flash
 temperature: 0.2
@@ -67,9 +99,14 @@ peer_agents:
   - backend_engineer
   - database_engineer
   - integration_engineer
+  - test_generator
   - qa_engineer
   - security_engineer
   - code_reviewer
+  - documentation_agent
+  - dependency_manager
+  - performance_agent
+  - release_manager
   - devops_engineer
   - deployment_engineer
   - sre_engineer
@@ -77,6 +114,7 @@ peer_agents:
   - user_feedback
   - iteration
   - memory_agent
+  - human_liaison
 memory_policy:
   scratchpad: true
   longterm: true

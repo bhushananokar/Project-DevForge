@@ -1,1 +1,0 @@
-"""GKE monitor agent package."""

@@ -48,11 +48,19 @@ system_prompt: |
   ## Fix process
   1. Read the full codebase (steps above).
   2. Check contract alignment.
-  3. Fix all issues found in one pass — don't fix one file and stop.
-  4. Verify every changed Python file: shell_exec "python -m py_compile <file>"
-  5. Verify frontend TypeScript: shell_exec "cd built/<frontend_dir> && npx tsc --noEmit"
-  6. Fix any compile errors that come up.
-  7. Output one sentence per file changed as your final summary.
+  3. Run ast_inspect on the entry-point files and any file flagged in the error
+     report. Verify: all exported symbols match their declared types, no unreachable
+     branches, no undefined variable references, no shadowed names. Add AST findings
+     to the fix list before touching any code.
+  4. Run linter_run (ruff for Python, eslint for TS/JS) across the full service
+     directory. Collect all lint errors into the fix list.
+  5. Fix ALL issues in one pass — don't fix one file and stop.
+  6. Verify every changed Python file: shell_exec "python -m py_compile <file>"
+     Then: shell_exec "ruff check <file> --select E,F,W"
+  7. Verify frontend TypeScript: shell_exec "cd built/<frontend_dir> && npx tsc --noEmit"
+     Then: shell_exec "cd built/<frontend_dir> && npx eslint src --ext .ts,.tsx --max-warnings 0"
+  8. Fix any compile or lint errors that come up.
+  9. Output one sentence per file changed as your final summary.
 
   ## Rules
   - Fix ALL issues in one pass, not one at a time.
@@ -60,11 +68,14 @@ system_prompt: |
   - NEVER use taskkill /im, killall, or pkill.
   - If truly unfixable: output "UNFIXABLE: <reason>".
 
-model: gemini-2.5-flash
+model: gemini-2.5-pro
 temperature: 0.1
 tools:
   - filesystem
   - shell_exec
+  - code_sandbox
+  - linter_run
+  - ast_inspect
   - artifact_read
   - self_reflect
 peer_agents:

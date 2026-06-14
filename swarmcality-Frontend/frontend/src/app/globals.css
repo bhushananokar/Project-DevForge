@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+html, body {
+  background-color: #0A0A0F;
+  color: #E8E8F0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #13131A; }
+::-webkit-scrollbar-thumb { background: #2E2E42; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3e3e56; }
+
+/* Prose reset for prompt output */
+.prompt-prose h2 { font-size: 1rem; font-weight: 600; color: #a89cf7; margin: 1.25rem 0 0.5rem; }
+.prompt-prose h3 { font-size: 0.875rem; font-weight: 600; color: #c4bbf9; margin: 1rem 0 0.375rem; }
+.prompt-prose p  { margin: 0.5rem 0; line-height: 1.7; }
+.prompt-prose ul, .prompt-prose ol { padding-left: 1.25rem; margin: 0.5rem 0; }
+.prompt-prose li { margin: 0.25rem 0; line-height: 1.6; }
+.prompt-prose code { background: #1e1e2e; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; color: #a89cf7; }
+.prompt-prose pre  { background: #1e1e2e; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.75rem 0; }
+.prompt-prose hr   { border-color: #252535; margin: 1rem 0; }

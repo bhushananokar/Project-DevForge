@@ -1,0 +1,34 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+build/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+traces/
+memory_store/
+*.jsonl
+*.log
+chroma_db/
+
+# Frontend (Next.js)
+swarmcality-Frontend/frontend/node_modules/
+swarmcality-Frontend/frontend/.next/
+swarmcality-Frontend/frontend/out/
+swarmcality-Frontend/frontend/.env.local
+swarmcality-Frontend/frontend/.env.development.local
+swarmcality-Frontend/frontend/.env.test.local
+swarmcality-Frontend/frontend/.env.production.local
+swarmcality-Frontend/frontend/next-env.d.ts
+
+# Frontend backend (Python)
+swarmcality-Frontend/backend/__pycache__/
+swarmcality-Frontend/backend/venv/
+swarmcality-Frontend/backend/.env

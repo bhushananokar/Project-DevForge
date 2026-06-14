@@ -16,7 +16,6 @@ description: |
     user_feedback      → covers post-launch feedback and digest
 
 orchestrator: chief_orchestrator
-lifecycle: software_delivery    # references configs/lifecycles/software_delivery.yaml
 
 agents:
   - role: chief_orchestrator
@@ -45,7 +44,8 @@ agents:
     count: 1
 
 coordination:
-  strategy: hierarchical
+  strategy: lifecycle
+  lifecycle: software_delivery
   max_subswarm_size: 3
   consensus_protocol: majority
   debate_max_rounds: 2

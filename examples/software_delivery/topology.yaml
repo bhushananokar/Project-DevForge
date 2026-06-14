@@ -7,7 +7,6 @@ description: |
   and iteration decisions.
 
 orchestrator: chief_orchestrator
-lifecycle: software_delivery    # references configs/lifecycles/software_delivery.yaml
 
 agents:
   # Coordination layer
@@ -83,7 +82,8 @@ agents:
   # iteration removed — handled by orchestrator convergence loop
 
 coordination:
-  strategy: hierarchical
+  strategy: lifecycle
+  lifecycle: software_delivery
   max_subswarm_size: 5
   consensus_protocol: weighted
   debate_max_rounds: 3

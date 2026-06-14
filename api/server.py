@@ -45,23 +45,66 @@ app.add_middleware(
 
 # ── State (set by CLI on startup) ─────────────────────────────────────────────
 
-_runtime_factory: Optional[Callable[[], Tuple[Any, Any]]] = None
+_runtime_factory: Optional[Callable[..., Tuple[Any, Any]]] = None
 _config: Optional[Any] = None
+_default_topology: Optional[str] = None
 _ws_clients: list[WebSocket] = []
 
 # Pending human_input requests: request_id → asyncio.Future[str]
 _pending_human_inputs: dict[str, "asyncio.Future[str]"] = {}
 
+# Topology keys sent by swarmcality-Frontend → repo-relative YAML paths
+_TOPOLOGY_ALIASES: dict[str, str] = {
+    "coding_swarm": "examples/coding_swarm/topology.yaml",
+    "software_delivery": "examples/software_delivery/topology.yaml",
+    "software_delivery_lite": "examples/software_delivery_lite/topology.yaml",
+    "research_swarm": "examples/research_swarm/topology.yaml",
+    "simple_chat": "examples/simple_chat/topology.yaml",
+}
 
-def set_runtime_factory(factory: Callable[[], Tuple[Any, Any]], config: Any) -> None:
-    """Register a zero-argument callable that returns (SwarmRuntime, CostLedger).
+
+def resolve_topology_path(topology: Optional[str], default: Optional[str] = None) -> Optional[str]:
+    """Resolve a UI topology key or YAML path to an absolute file path."""
+    from pathlib import Path
+
+    if not topology:
+        if not default:
+            return None
+        topology = default
+
+    key = topology.strip()
+    repo_root = Path(__file__).resolve().parent.parent
+
+    candidates: list[Path] = []
+    if key in _TOPOLOGY_ALIASES:
+        candidates.append(repo_root / _TOPOLOGY_ALIASES[key])
+    p = Path(key)
+    if p.is_absolute():
+        candidates.append(p)
+    else:
+        candidates.extend([Path.cwd() / p, repo_root / p])
+
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+
+    raise HTTPException(404, detail=f"Topology not found: {topology}")
+
+
+def set_runtime_factory(
+    factory: Callable[..., Tuple[Any, Any]],
+    config: Any,
+    default_topology: Optional[str] = None,
+) -> None:
+    """Register a callable that returns (SwarmRuntime, CostLedger).
 
     Called once by `swarm dashboard` after bootstrapping registries.
-    Each POST /run invocation calls this factory to obtain a fresh runtime.
+    Each POST /run invocation calls this factory with topology/budget kwargs.
     """
-    global _runtime_factory, _config
+    global _runtime_factory, _config, _default_topology
     _runtime_factory = factory
     _config = config
+    _default_topology = default_topology
 
 
 def set_runtime(runtime: Any, config: Any) -> None:
@@ -160,7 +203,10 @@ async def run_goal(req: RunRequest) -> RunResponse:
                 "before accepting run requests."
             ),
         )
-    runtime, _ledger = _runtime_factory()
+    runtime, _ledger = _runtime_factory(
+        topology=req.topology,
+        budget_usd=req.budget_usd,
+    )
     result = await runtime.run(req.goal)
     trace_id = getattr(runtime, "trace_id", "")
     token_total = 0
@@ -202,6 +248,31 @@ async def get_cost(trace_id: str) -> dict:
         raise HTTPException(503, "Config not set")
     from observability.replay import cost_summary
     return cost_summary(trace_id, _config.trace_dir)
+
+
+@app.get("/topologies")
+async def list_topologies() -> dict:
+    """List known topology presets (for swarmcality-Frontend and other clients)."""
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parent.parent
+    items = []
+    for key, rel in _TOPOLOGY_ALIASES.items():
+        path = repo_root / rel
+        agents: list[str] = []
+        if path.exists():
+            try:
+                from configs.loader import load_topology_spec
+                spec = load_topology_spec(path)
+                agents = [slot.role for slot in spec.agents]
+            except Exception:
+                pass
+        items.append({
+            "key": key,
+            "path": rel,
+            "agents": agents,
+        })
+    return {"topologies": items}
 
 
 @app.get("/agents")

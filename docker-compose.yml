@@ -9,6 +9,9 @@ services:
     build: *swarm-build
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - SWARM_PROVIDER=${SWARM_PROVIDER:-openrouter}
+      - SWARM_DEFAULT_MODEL=${SWARM_DEFAULT_MODEL:-deepseek/deepseek-v4-pro}
       - SWARM_BUS_TRANSPORT=redis
       - SWARM_REDIS_URL=redis://redis:6379
       # local = in-process TaskGraphExecutor; redis-workers = Redis Streams + swarm-worker profile
@@ -23,6 +26,8 @@ services:
       - ./agents:/app/agents:ro
       - ./tools:/app/tools:ro
       - ./configs:/app/configs:ro
+      - ./examples:/app/examples:ro
+      - ./schemas:/app/schemas:ro
     ports:
       - "8765:8765"
     depends_on:
@@ -37,6 +42,9 @@ services:
     command: ["python", "-m", "coordination.worker"]
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - SWARM_PROVIDER=${SWARM_PROVIDER:-openrouter}
+      - SWARM_DEFAULT_MODEL=${SWARM_DEFAULT_MODEL:-deepseek/deepseek-v4-pro}
       - SWARM_BUS_TRANSPORT=redis
       - SWARM_REDIS_URL=redis://redis:6379
       - SWARM_STREAM_PREFIX=${SWARM_STREAM_PREFIX:-swarm}
@@ -52,6 +60,8 @@ services:
       - ./agents:/app/agents:ro
       - ./tools:/app/tools:ro
       - ./configs:/app/configs:ro
+      - ./examples:/app/examples:ro
+      - ./schemas:/app/schemas:ro
     depends_on:
       redis:
         condition: service_healthy

@@ -504,11 +504,22 @@ def dashboard(
     # Wire a factory so each POST /run gets a fresh, isolated SwarmRuntime.
     # Using a factory (rather than a single shared runtime) prevents state
     # leakage between consecutive API calls.
-    def _make_runtime():
-        return _build_runtime(cfg, topology_path=topology, deploy=False)
+    cli_topology = topology
+
+    def _make_runtime(
+        topology: Optional[str] = None,
+        budget_usd: Optional[float] = None,
+    ):
+        from api.server import resolve_topology_path
+
+        topo_path = resolve_topology_path(topology, default=cli_topology)
+        runtime, ledger = _build_runtime(cfg, topology_path=topo_path, deploy=False)
+        if budget_usd is not None:
+            runtime.topology.budget.max_cost_usd = budget_usd
+        return runtime, ledger
 
     from api.server import app, set_runtime_factory
-    set_runtime_factory(_make_runtime, cfg)
+    set_runtime_factory(_make_runtime, cfg, default_topology=cli_topology)
 
     uvicorn.run(app, host=host, port=port, log_level="warning")
 

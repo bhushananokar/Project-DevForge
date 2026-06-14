@@ -107,18 +107,23 @@ def _load_tool_handler(tool_dir: Path, spec: ToolSpec) -> ToolHandler:
         # Ensure the parent package entry exists so Python's import machinery
         # doesn't choke when resolving the dotted name later.
         if pkg_name not in sys.modules:
+            import types
+
             pkg_init = tool_dir / "__init__.py"
-            pkg_spec = importlib.util.spec_from_file_location(
-                pkg_name, pkg_init if pkg_init.exists() else None,
-                submodule_search_locations=[str(tool_dir)],
-            )
-            if pkg_spec is not None:
-                pkg_mod = importlib.util.module_from_spec(pkg_spec)
-                sys.modules[pkg_name] = pkg_mod
-                try:
+            if pkg_init.exists():
+                pkg_spec = importlib.util.spec_from_file_location(
+                    pkg_name, str(pkg_init),
+                    submodule_search_locations=[str(tool_dir)],
+                )
+                if pkg_spec is not None:
+                    pkg_mod = importlib.util.module_from_spec(pkg_spec)
+                    sys.modules[pkg_name] = pkg_mod
                     pkg_spec.loader.exec_module(pkg_mod)  # type: ignore[union-attr]
-                except Exception:
-                    pass  # empty __init__.py is fine
+            else:
+                pkg_mod = types.ModuleType(pkg_name)
+                pkg_mod.__path__ = [str(tool_dir)]  # type: ignore[attr-defined]
+                pkg_mod.__package__ = pkg_name
+                sys.modules[pkg_name] = pkg_mod
 
         private_name = f"_tool_{spec.name.replace('-', '_')}"
         spec_ = importlib.util.spec_from_file_location(canonical_name, handler_path)

@@ -428,8 +428,39 @@ def _extract_yaml_block(document: str, marker: str) -> str:
     return document[content_start:fence_end].strip()
 
 
+_PROTOCOL_ALIASES = {
+    "CLI": "HTTP_REST",
+    "REST": "HTTP_REST",
+    "HTTP": "HTTP_REST",
+    "HTTPS": "HTTP_REST",
+    "LOCAL": "HTTP_REST",
+    "N/A": "HTTP_REST",
+}
+
+_TEST_FRAMEWORKS = {"JUNIT5", "KARATE", "PYTEST", "RSPEC", "JEST"}
+
+
+def _normalize_contractor_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Coerce common LLM enum mistakes before JSON Schema validation."""
+    normalized = dict(inputs)
+
+    protocol = str(normalized.get("primary_protocol", "")).upper()
+    if protocol in _PROTOCOL_ALIASES:
+        normalized["primary_protocol"] = _PROTOCOL_ALIASES[protocol]
+
+    ct_tool = str(normalized.get("contract_testing_tool", "")).upper()
+    if ct_tool in _TEST_FRAMEWORKS:
+        normalized.setdefault("test_framework", ct_tool)
+        normalized["contract_testing_tool"] = "SPECMATIC"
+
+    return normalized
+
+
 class ContractorHandler(ToolHandler):
     """Generate a CDD contract document and persist it as a CDDContract artifact."""
+
+    async def run(self, inputs: dict[str, Any], agent_id: Optional[str] = None) -> dict[str, Any]:
+        return await super().run(_normalize_contractor_inputs(inputs), agent_id)
 
     async def _run(self, inputs: dict[str, Any]) -> dict[str, Any]:
         if _factory is None:

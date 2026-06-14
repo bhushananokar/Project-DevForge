@@ -14,7 +14,23 @@ def set_registry(reg: Any) -> None:
     _registry = reg
 
 
+def _normalize_artifact_write_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Map common field aliases before JSON Schema validation."""
+    normalized = dict(inputs)
+    if "artifact_type" not in normalized:
+        if "type" in normalized:
+            normalized["artifact_type"] = normalized.pop("type")
+        elif isinstance(normalized.get("payload"), dict):
+            payload_type = normalized["payload"].get("artifact_type")
+            if payload_type:
+                normalized["artifact_type"] = payload_type
+    return normalized
+
+
 class ArtifactWriteHandler(ToolHandler):
+    async def run(self, inputs: dict[str, Any], agent_id: Optional[str] = None) -> dict[str, Any]:
+        return await super().run(_normalize_artifact_write_inputs(inputs), agent_id)
+
     async def _run(self, inputs: dict[str, Any]) -> dict[str, Any]:
         from memory.artifact_schemas.base import ARTIFACT_REGISTRY, ArtifactType
         from memory.artifacts import get_artifact_registry

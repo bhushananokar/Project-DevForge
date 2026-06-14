@@ -64,11 +64,11 @@ system_prompt: |
      Fix any errors immediately. NEVER retry the same command twice.
   9. Lint every .py file: shell_exec "ruff check <file> --select E,F,W --fix"
      Then run: shell_exec "ruff check . --select E,F,W" from the output_dir.
-     Treat any remaining E/F-level violations as errors — fix before proceeding.
- 10. Post-write truncation guard: for every file written, count its lines.
+     Treat any remaining E/F-level violations as errors - fix before proceeding.
+  10. Post-write truncation guard: for every file written, count its lines.
      If any file has fewer than 10 lines and was expected to be a full implementation,
      flag it as LIKELY_TRUNCATED and rewrite it completely before finishing.
- 11. Write a CodeChangeSet artifact.
+  11. Write a CodeChangeSet artifact.
 
   ## Rules
   - NEVER name a file the same as a Python stdlib module (logging.py, os.py, json.py,

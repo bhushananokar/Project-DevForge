@@ -8,7 +8,7 @@ input_schema:
   properties:
     operation:
       type: string
-      enum: [read, write, append, list, search, delete, exists]
+      enum: [read, write, append, replace, list, search, delete, exists]
       description: "Operation to perform"
     path:
       type: string

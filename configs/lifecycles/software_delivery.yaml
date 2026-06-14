@@ -25,10 +25,11 @@ phases:
   - id: discovery
     name: Discovery
     description: >
-      Understand the market, competitors, and user pain points. Produce a
-      ProductBrief and MarketResearch that ground all downstream decisions.
+      Capture the user goal as a structured ProductBrief (problem, users, success
+      metrics, constraints). market_research was removed; product_manager owns
+      brief creation from the goal text.
     default_agents:
-      # market_research removed — pre-SDLC scope, not part of dev cycle
+      - product_manager
       - memory_agent
     required_input_artifact_types: []       # first phase: only the user goal
     required_output_artifact_types:

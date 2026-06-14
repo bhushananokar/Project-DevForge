@@ -15,6 +15,7 @@ from memory.artifact_schemas.base import (
     # Build
     CodeChangeSet,
     # Quality
+    TestPlan,
     TestReport,
     SecurityReport,
     CodeReviewReport,
@@ -40,6 +41,7 @@ __all__ = [
     "APISpec",
     "DBSchema",
     "CodeChangeSet",
+    "TestPlan",
     "TestReport",
     "SecurityReport",
     "CodeReviewReport",

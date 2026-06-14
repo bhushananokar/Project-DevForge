@@ -14,7 +14,7 @@ input_schema:
       type: string
       description: >
         Canonical artifact type name. One of: ProductBrief, MarketResearch, PRD,
-        ArchitectureDoc, APISpec, DBSchema, CodeChangeSet, TestReport,
+        ArchitectureDoc, APISpec, DBSchema, CodeChangeSet, TestPlan, TestReport,
         SecurityReport, CodeReviewReport, DeploymentPlan, DeploymentRecord,
         MonitoringConfig, IncidentRecord, FeedbackDigest, ReleaseDecision.
     payload:

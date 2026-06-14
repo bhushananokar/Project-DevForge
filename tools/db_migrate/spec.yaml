@@ -29,5 +29,5 @@ output_schema:
   type: object
 timeout: 60.0
 retry_policy:
-  max_attempts: 1  # max_attempts: 1 intentional — destructive operation requires explicit re-trigger
+  max_attempts: 1  # max_attempts: 1 intentional - destructive operation requires explicit re-trigger
   backoff_seconds: [5, 15, 60]

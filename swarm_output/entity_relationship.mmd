@@ -1,0 +1,21 @@
+erDiagram
+    Task {
+        string id PK "UUID v4"
+        string title "Required"
+        string description "Nullable"
+        string priority "low|medium|high (default: medium)"
+        string status "pending|done (default: pending)"
+        string due_date "ISO 8601 date, nullable"
+        string created_at "ISO 8601 datetime UTC"
+        string updated_at "ISO 8601 datetime UTC, nullable"
+        string completed_at "ISO 8601 datetime UTC, nullable"
+        string tags "JSON array of strings"
+    }
+
+    TaskFile {
+        string path "filesystem path"
+        string encoding "UTF-8"
+        string schema_version "1"
+    }
+
+    TaskFile ||--o{ Task : contains

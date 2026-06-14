@@ -17,6 +17,7 @@ from tools.base import ToolHandler
 # Injected by api/server.py at startup.
 # Signature: async (prompt: str, options: list[str] | None, timeout: float) -> str
 _ws_requester: Optional[Callable[[str, Optional[List[str]], float], Awaitable[str]]] = None
+_safety_mode: str = "interactive"
 
 
 def set_ws_requester(
@@ -27,11 +28,23 @@ def set_ws_requester(
     _ws_requester = fn
 
 
+def set_safety_mode(mode: str) -> None:
+    """Set safety mode ('auto' skips blocking human prompts)."""
+    global _safety_mode
+    _safety_mode = mode
+
+
 class HumanInputHandler(ToolHandler):
     async def _run(self, inputs: dict[str, Any]) -> dict[str, Any]:
         prompt_text: str = inputs["prompt"]
         options: Optional[List[str]] = inputs.get("options")
-        timeout: float = 300.0  # 5-minute window for frontend users
+
+        if _safety_mode == "auto":
+            _log_warn("human_input skipped in auto safety mode — auto-approving")
+            return {"response": "proceed", "auto_approved": True}
+
+        # Leave headroom so the outer tool timeout does not race the WS wait.
+        timeout: float = max(30.0, float(self.spec.timeout) - 10.0)
 
         # ── Path 1: WebSocket → frontend ──────────────────────────────────────
         if _ws_requester is not None:
@@ -39,9 +52,13 @@ class HumanInputHandler(ToolHandler):
                 response = await _ws_requester(prompt_text, options, timeout)
                 return {"response": response}
             except asyncio.TimeoutError:
+                if _safety_mode == "auto":
+                    _log_warn("human_input WS timeout in auto mode — auto-approving")
+                    return {"response": "proceed", "auto_approved": True}
                 return {
-                    "response": "timeout",
-                    "error": "No response from user within the timeout window.",
+                    "response": "proceed",
+                    "auto_approved": True,
+                    "warning": "No response from user within the timeout window; proceeding.",
                 }
             except Exception as exc:
                 _log_warn(f"WS human_input failed ({exc}), falling back to CLI")

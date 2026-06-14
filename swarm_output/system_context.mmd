@@ -1,0 +1,9 @@
+flowchart LR
+    User["👤 Developer / User"]
+    CLI["🐍 CLI Todo App\n(Python 3.10+)" ]
+    JSON["📄 tasks.json\n(Local Filesystem)" ]
+    Env["🌐 Environment\nTODO_FILE, NO_COLOR"]
+
+    User -->|"todo &lt;subcommand&gt; [options]"| CLI
+    CLI -->|"atomic read/write"| JSON
+    Env -.->|"configures"| CLI

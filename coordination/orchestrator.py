@@ -86,6 +86,7 @@ class SwarmRuntime:
         deployment_mode: str = "local",
         redis_url: str = "redis://localhost:6379",
         deploy: bool = True,
+        safety_mode: Optional[str] = None,
     ) -> None:
         self.topology = topology
         self._provider = provider
@@ -98,6 +99,7 @@ class SwarmRuntime:
         self._deployment_mode = deployment_mode
         self._redis_url = redis_url
         self._deploy = deploy
+        self._safety_mode = safety_mode or topology.safety.mode
         self._stop_after_phase: Optional[str] = None
         self._resume_from_phase: Optional[str] = None
 
@@ -112,6 +114,9 @@ class SwarmRuntime:
         import tools.send_message.handler as sm_h
         import tools.spawn_agent.handler as sa
         import tools.contractor.handler as ct
+        import tools.human_input.handler as hi
+
+        hi.set_safety_mode(self._safety_mode)
 
         if self._longterm:
             ms.set_memory(self._longterm)
@@ -276,7 +281,7 @@ class SwarmRuntime:
         lifecycle_name = self.topology.coordination.lifecycle or "software_delivery"
         lifecycle = _load_lifecycle(lifecycle_name)
         approval_gates = self.topology.coordination.approval_gates
-        safety_mode = self.topology.safety.mode
+        safety_mode = self._safety_mode
 
         from memory.artifacts import get_artifact_registry
         artifact_reg = get_artifact_registry()
@@ -478,15 +483,28 @@ class SwarmRuntime:
         """Run each agent role in the phase sequentially (simple ordered dispatch)."""
         import asyncio
         results: list[TaskResult] = []
+        phase_id = phase_task.input_payload.get("phase_id", "unknown")
         for role in agent_roles:
             # Skip roles not registered in the topology (graceful degradation)
             registered = [slot.role for slot in self.topology.agents]
             if role not in registered:
                 log.debug("phase_agent_skipped", role=role, reason="not_in_topology")
                 continue
+            goal = phase_task.goal
+            if role == "memory_agent":
+                goal = (
+                    f"[Memory ingest — phase: {phase_id}]\n"
+                    "Do NOT produce deliverable artifacts and do NOT call artifact_write.\n"
+                    "Complete in one pass (max 3 tool calls):\n"
+                    "  1. artifact_read — fetch artifacts from this phase\n"
+                    "  2. memory_store — write one phase summary using the matching key "
+                    "from schemas/memory_keys.yaml\n"
+                    "  3. Reply with plain text 'Phase memory ingested' and stop.\n"
+                    f"Phase context (for key selection only):\n{phase_task.goal[:800]}"
+                )
             try:
                 result = await self._spawn_agent_for_goal(
-                    role, phase_task.goal,
+                    role, goal,
                     timeout=phase_task.constraints.timeout,
                     max_iterations=phase_task.constraints.max_iterations,
                 )

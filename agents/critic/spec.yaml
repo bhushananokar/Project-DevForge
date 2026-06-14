@@ -68,6 +68,6 @@ memory_policy:
   scratchpad: true
   longterm: false
 termination:
-  max_iterations: 15
+  max_iterations: 25
   max_tokens: 8192
 hooks: {}

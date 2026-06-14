@@ -28,6 +28,6 @@ memory_policy:
   longterm: true
   longterm_write_on_complete: true
 termination:
-  max_iterations: 15
+  max_iterations: 25
   max_tokens: 8192
 hooks: {}

@@ -34,6 +34,7 @@ class ArtifactType(str, Enum):
     db_schema = "DBSchema"
     code_change_set = "CodeChangeSet"
     test_report = "TestReport"
+    test_plan = "TestPlan"
     security_report = "SecurityReport"
     code_review_report = "CodeReviewReport"
     deployment_plan = "DeploymentPlan"
@@ -263,6 +264,25 @@ class UncoveredCriterion(BaseModel):
     reason: str = ""
 
 
+class TestCase(BaseModel):
+    test_id: str
+    criterion_ref: str = ""
+    description: str = ""
+    preconditions: str = ""
+    inputs: str = ""
+    expected_output: str = ""
+    test_type: str = "unit"  # unit | integration | e2e | contract
+
+
+class TestPlan(ArtifactBase):
+    """Pre-implementation test specification produced by test_generator."""
+    artifact_type: ArtifactType = ArtifactType.test_plan
+    test_cases: list[TestCase] = Field(default_factory=list)
+    untestable_criteria: list[str] = Field(default_factory=list)
+    total_count: int = 0
+    generated_at: str = ""
+
+
 class TestReport(ArtifactBase):
     artifact_type: ArtifactType = ArtifactType.test_report
     suites: list[TestSuite] = Field(default_factory=list)
@@ -435,6 +455,7 @@ ARTIFACT_REGISTRY: dict[str, Type[ArtifactBase]] = {
     ArtifactType.cdd_contract.value: CDDContract,
     ArtifactType.db_schema.value: DBSchema,
     ArtifactType.code_change_set.value: CodeChangeSet,
+    ArtifactType.test_plan.value: TestPlan,
     ArtifactType.test_report.value: TestReport,
     ArtifactType.security_report.value: SecurityReport,
     ArtifactType.code_review_report.value: CodeReviewReport,

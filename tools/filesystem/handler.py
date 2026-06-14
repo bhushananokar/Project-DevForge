@@ -45,7 +45,7 @@ class FilesystemHandler(ToolHandler):
         raw_path = inputs["path"]
 
         # Write operations go into built/; reads/lists/searches use the path as-is
-        if op in ("write", "append", "delete"):
+        if op in ("write", "append", "replace", "delete"):
             path = _build_path(raw_path)
         else:
             path = _safe_path(raw_path)
@@ -60,6 +60,12 @@ class FilesystemHandler(ToolHandler):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(inputs.get("content", ""), encoding="utf-8")
             return {"written": str(path.relative_to(_CWD)), "bytes": path.stat().st_size}
+
+        elif op == "replace":
+            # Full-file overwrite (alias some models use instead of write)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(inputs.get("content", ""), encoding="utf-8")
+            return {"replaced": str(path.relative_to(_CWD)), "bytes": path.stat().st_size}
 
         elif op == "append":
             path.parent.mkdir(parents=True, exist_ok=True)

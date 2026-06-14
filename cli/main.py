@@ -125,6 +125,7 @@ def _build_runtime(cfg, topology_path: Optional[str], deploy: bool = True):
         deployment_mode=cfg.deployment_mode,
         redis_url=cfg.redis_url,
         deploy=deploy,
+        safety_mode=cfg.safety_mode,
     )
     return runtime, ledger
 
@@ -552,8 +553,18 @@ def doctor(api_key: Optional[str], openrouter_api_key: Optional[str], agents_dir
     import os
     key = api_key or os.environ.get("GROQ_API_KEY", "")
     or_key = openrouter_api_key or os.environ.get("OPENROUTER_API_KEY", "")
-    check("GROQ_API_KEY is set", bool(key), "Set GROQ_API_KEY in .env or environment")
-    check("OPENROUTER_API_KEY is set", bool(or_key), "Set OPENROUTER_API_KEY in .env or environment (optional)")
+    provider = os.environ.get("SWARM_PROVIDER", "openrouter").lower()
+
+    if provider == "openrouter":
+        check("OPENROUTER_API_KEY is set", bool(or_key), "Set OPENROUTER_API_KEY in .env or environment")
+    elif provider == "groq":
+        check("GROQ_API_KEY is set", bool(key), "Set GROQ_API_KEY in .env or environment")
+    else:
+        check(
+            "LLM API key configured (GROQ or OpenRouter)",
+            bool(key) or bool(or_key),
+            "Set OPENROUTER_API_KEY or GROQ_API_KEY in .env or environment",
+        )
 
     # Directories
     check("agents/ directory exists", Path(agents_dir).exists(), f"mkdir {agents_dir}")
